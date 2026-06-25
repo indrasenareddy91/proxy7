@@ -14,11 +14,18 @@ proxy.on('error', (err, req, res) => {
   res.end('Proxy encountered an error routing your request.');
 });
 
-// Create the HTTP server
 const server = http.createServer((req, res) => {
+  // CRITICAL FIX: Catch UptimeRobot / direct browser hits instantly to prevent 504/508 infinite loops
+  if (req.url === '/' || req.url === '/ping') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Proxy node is alive and healthy.');
+    return;
+  }
+
   try {
     let target = req.url;
 
+    // If it's not an absolute URL, resolve it using the incoming request headers
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
       const host = req.headers.host;
       target = `https://${host}${req.url}`;
@@ -26,6 +33,7 @@ const server = http.createServer((req, res) => {
 
     console.log(`[Proxying Request] -> ${req.method} ${target}`);
 
+    // Forward the payload out through this instance's unique IP address
     proxy.web(req, res, {
       target: target,
       changeOrigin: true,
@@ -40,7 +48,7 @@ const server = http.createServer((req, res) => {
   }
 });
 
-// Render routes traffic to 0.0.0.0 automatically
+// Bind explicitly to 0.0.0.0 so Render detects the open port flawlessly
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Proxy server actively running on port ${PORT}`);
