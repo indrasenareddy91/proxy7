@@ -1,11 +1,11 @@
-// server.js (Deploy this to your Render Node.js instances)
-const http = require('http');
-const httpProxy = require('http-proxy');
+// server.mjs
+import http from 'http';
+import httpProxy from 'http-proxy';
 
 // Create a proxy server instance
 const proxy = httpProxy.createProxyServer({});
 
-// Handle errors gracefully so the Render instance doesn't crash on bad requests
+// Handle errors gracefully so the Render instance doesn't crash
 proxy.on('error', (err, req, res) => {
   console.error('Proxy Error:', err);
   if (!res.headersSent) {
@@ -14,27 +14,23 @@ proxy.on('error', (err, req, res) => {
   res.end('Proxy encountered an error routing your request.');
 });
 
-// Create the HTTP server that will accept incoming connections from your Next.js app
+// Create the HTTP server
 const server = http.createServer((req, res) => {
   try {
-    // Read the target destination from standard headers or fall back to parsing the full URL
     let target = req.url;
 
-    // Check if it's an absolute URL, if not, try to construct it or fail gracefully
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      // Fallback for tools that absolute-path via standard headers
       const host = req.headers.host;
       target = `https://${host}${req.url}`;
     }
 
     console.log(`[Proxying Request] -> ${req.method} ${target}`);
 
-    // Forward the request to Groq / SubDL
     proxy.web(req, res, {
       target: target,
-      changeOrigin: true, // Crucial for SSL/TLS handshakes with Groq/SubDL
+      changeOrigin: true,
       prependPath: false,
-      secure: true        // Ensures SSL certificates are verified
+      secure: true
     });
 
   } catch (error) {
@@ -44,8 +40,8 @@ const server = http.createServer((req, res) => {
   }
 });
 
-// Render provides the port dynamically via process.env.PORT
+// Render routes traffic to 0.0.0.0 automatically
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Proxy server actively running on port ${PORT}`);
 });
