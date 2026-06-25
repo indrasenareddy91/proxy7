@@ -2,9 +2,10 @@
   "name": "render-forward-proxy",
   "version": "1.0.0",
   "description": "Custom Node.js forward proxy for routing API requests",
-  "main": "server.js",
+  "main": "server.mjs",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.mjs"
   },
   "dependencies": {
     "http-proxy": "^1.18.1"
